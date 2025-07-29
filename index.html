@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bomar Style Advisor Widget</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Helvetica:wght@400;600&display=swap');
+  :root {
+    --color-bg: #ffffff;
+    --color-primary: #000000;
+    --color-accent: #d4af37;
+    --color-light: #f5f5f5;
+    --color-text: #000000;
+    --font-sans: 'Helvetica', sans-serif;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    margin: 0;
+    padding: 0;
+    color: var(--color-text);
+  }
+
+  #styleAssistantBtn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: var(--color-accent);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 14px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease;
+    z-index: 1000;
+  }
+  #styleAssistantBtn:hover {
+    background: #b8972e;
+  }
+
+  #styleAssistantPanel {
+    position: fixed;
+    top: 0;
+    right: -420px;
+    width: 400px;
+    height: 100vh;
+    background: white;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+    padding: 20px 30px;
+    box-sizing: border-box;
+    font-family: var(--font-sans);
+    font-size: 16px;
+    color: var(--color-primary);
+    display: flex;
+    flex-direction: column;
+    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 9999;
+  }
+  #styleAssistantPanel.open {
+    right: 0;
+  }
+  #styleAssistantClose {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--color-accent);
+    cursor: pointer;
+    align-self: flex-end;
+    margin-bottom: 20px;
+    user-select: none;
+  }
+
+  #styleAssistantPanel h2 {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 24px;
+    color: var(--color-primary);
+  }
+
+  .question {
+    margin-bottom: 20px;
+  }
+  .question label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: var(--color-primary);
+  }
+
+  .options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .option-btn {
+    background: var(--color-light);
+    border: 1px solid var(--color-accent);
+    border-radius: 25px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--color-primary);
+    user-select: none;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    flex: 1 1 calc(50% - 10px);
+    text-align: center;
+  }
+
+  .option-btn.selected {
+    background: var(--color-accent);
+    color: white;
+  }
+
+  #nextBtn, #resetBtn {
+    background: var(--color-accent);
+    border: none;
+    border-radius: 30px;
+    color: white;
+    padding: 12px 30px;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease;
+    width: 100%;
+  }
+  #nextBtn:hover, #resetBtn:hover {
+    background: #b8972e;
+  }
+
+  #outfitResults {
+    display: none;
+    flex-direction: column;
+    font-family: var(--font-sans);
+    color: var(--color-primary);
+  }
+  #outfitResults.show {
+    display: flex;
+  }
+  .product-card {
+    display: flex;
+    gap: 15px;
+    border: 1px solid var(--color-light);
+    border-radius: 10px;
+    padding: 12px;
+    align-items: center;
+    background: var(--color-bg);
+    margin-bottom: 10px;
+  }
+  .product-card img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  .product-info {
+    flex-grow: 1;
+  }
+  .product-name {
+    font-weight: 600;
+    font-size: 16px;
+    margin: 0 0 6px 0;
+  }
+  .product-price {
+    font-weight: 600;
+    color: var(--color-accent);
+    font-size: 14px;
+    margin: 0;
+  }
+  .product-link {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  .product-link:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 440px) {
+    #styleAssistantPanel {
+      width: 100vw;
+      right: -100vw;
+    }
+    #styleAssistantPanel.open {
+      right: 0;
+    }
+    #styleAssistantBtn {
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      font-size: 14px;
+    }
+  }
+</style>
+</head>
+<body>
+<button id="styleAssistantBtn" aria-label="Otvorite Bomar Stilistu">💎 Bomar Stilista</button>
+
+<aside id="styleAssistantPanel" aria-hidden="true" aria-label="Pomoć pri odabiru dodataka">
+  <div id="styleAssistantClose" role="button" tabindex="0" aria-label="Zatvori Stilistu">&times;</div>
+
+  <h2>Bomar Stilski Savetnik</h2>
+
+  <form id="styleForm" aria-live="polite">
+    <section id="question1" class="question" data-question="occasion">
+      <label>Za koju priliku tražite dodatak?</label>
+      <div class="options">
+        <div class="option-btn" tabindex="0" data-value="Svaki dan">Svaki dan</div>
+        <div class="option-btn" tabindex="0" data-value="Posao">Posao</div>
+        <div class="option-btn" tabindex="0" data-value="Veče">Veče</div>
+        <div class="option-btn" tabindex="0" data-value="Posebna prilika">Posebna prilika</div>
+      </div>
+    </section>
+
+    <section id="question2" class="question" data-question="material" hidden>
+      <label>Koji materijal preferirate?</label>
+      <div class="options">
+        <div class="option-btn" tabindex="0" data-value="Zlato">Zlato</div>
+        <div class="option-btn" tabindex="0" data-value="Srebro">Srebro</div>
+        <div class="option-btn" tabindex="0" data-value="Čelik">Čelik</div>
+        <div class="option-btn" tabindex="0" data-value="Dragulji">Dragulji</div>
+      </div>
+    </section>
+
+    <section id="question3" class="question" data-question="style" hidden>
+      <label>Koji stil vam odgovara?</label>
+      <div class="options">
+        <div class="option-btn" tabindex="0" data-value="Klasični">Klasični</div>
+        <div class="option-btn" tabindex="0" data-value="Moderni">Moderni</div>
+        <div class="option-btn" tabindex="0" data-value="Luksuzni">Luksuzni</div>
+        <div class="option-btn" tabindex="0" data-value="Minimalistički">Minimalistički</div>
+      </div>
+    </section>
+
+    <button type="button" id="nextBtn" aria-label="Dalje">Dalje</button>
+    <div id="errorMessage" role="alert" aria-live="assertive" style="color: #c0392b; font-size: 14px; margin-top: 10px; min-height: 1.2em;"></div>
+  </form>
+
+  <section id="outfitResults" aria-live="polite" aria-atomic="true">
+    <h3>Vaše Bomar preporuke</h3>
+    <div id="productsContainer"></div>
+    <button id="resetBtn" style="margin-top: 15px;">🔄 Počni iznova</button>
+  </section>
+</aside>
+
+<script>
+(function() {
+  const btnOpen = document.getElementById('styleAssistantBtn');
+  const panel = document.getElementById('styleAssistantPanel');
+  const btnClose = document.getElementById('styleAssistantClose');
+  const form = document.getElementById('styleForm');
+  const nextBtn = document.getElementById('nextBtn');
+  const outfitResults = document.getElementById('outfitResults');
+  const productsContainer = document.getElementById('productsContainer');
+  const resetBtn = document.getElementById('resetBtn');
+
+  let currentStep = 1;
+  const totalSteps = 3;
+  const answers = {};
+
+  // Sample Bomar product data (replace with actual bomar.rs catalog data)
+  const productSets = {
+    "Svaki dan|Čelik|Minimalistički": [
+      { name: "Tissot Le Locle Sat", price: "€650", img: "https://bomar.rs/storage/2023/04/tissot-le-locle-regulateur-150x150.jpg", link: "https://bomar.rs/proizvodi/tissot-le-locle-regulateur" },
+      { name: "Pandora Narukvica", price: "€120", img: "https://bomar.rs/storage/2023/04/pandora-moments-bracelet-150x150.jpg", link: "https://bomar.rs/proizvodi/pandora-moments-bracelet" }
+    ],
+    "Veče|Zlato|Luksuzni": [
+      { name: "Rolex Datejust", price: "€12,500", img: "https://bomar.rs/storage/2023/04/rolex-datejust-36-150x150.jpg", link: "https://bomar.rs/proizvodi/rolex-datejust-36" },
+      { name: "Cartier Prsten", price: "€3,200", img: "https://bomar.rs/storage/2023/04/cartier-love-ring-150x150.jpg", link: "https://bomar.rs/proizvodi/cartier-love-ring" }
+    ],
+    "default": [
+      { name: "Longines Master Sat", price: "€2,100", img: "https://bomar.rs/storage/2023/04/longines-master-collection-150x150.jpg", link: "https://bomar.rs/proizvodi/longines-master-collection" },
+      { name: "Swarovski Minera Naušnice", price: "€150", img: "https://bomar.rs/storage/2023/04/swarovski-minera-earrings-150x150.jpg", link: "https://bomar.rs/proizvodi/swarovski-minera-earrings" }
+    ]
+  };
+
+  btnOpen.addEventListener('click', () => {
+    panel.classList.add('open');
+    panel.setAttribute('aria-hidden', 'false');
+  });
+
+  btnClose.addEventListener('click', () => {
+    panel.classList.remove('open');
+    panel.setAttribute('aria-hidden', 'true');
+  });
+  btnClose.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      btnClose.click();
+    }
+  });
+
+  form.querySelectorAll('.options').forEach(optionsContainer => {
+    optionsContainer.addEventListener('click', e => {
+      if (!e.target.classList.contains('option-btn')) return;
+      optionsContainer.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+      e.target.classList.add('selected');
+      document.getElementById('errorMessage').textContent = '';
+    });
+  });
+
+  form.querySelectorAll('.options').forEach(optionsContainer => {
+    optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
+      btn.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          btn.click();
+        }
+      });
+    });
+  });
+
+  nextBtn.addEventListener('click', () => {
+    const questionEl = form.querySelector(`[data-question]:not([hidden])`);
+    if (!questionEl) return;
+
+    const selectedOption = questionEl.querySelector('.option-btn.selected');
+    const errorMessageEl = document.getElementById('errorMessage');
+
+    if (!selectedOption) {
+      errorMessageEl.textContent = 'Molimo vas, izaberite opciju da biste nastavili.';
+      return;
+    } else {
+      errorMessageEl.textContent = '';
+    }
+
+    const questionName = questionEl.getAttribute('data-question');
+    answers[questionName] = selectedOption.getAttribute('data-value');
+
+    if (currentStep < totalSteps) {
+      currentStep++;
+      showStep(currentStep);
+    } else {
+      showResults();
+    }
+  });
+
+  function showStep(step) {
+    form.querySelectorAll('[data-question]').forEach(el => el.hidden = true);
+    form.querySelector(`[data-question="${getQuestionName(step)}"]`).hidden = false;
+
+    if (step === totalSteps) {
+      nextBtn.textContent = 'Prikaži preporuke';
+    } else {
+      nextBtn.textContent = 'Dalje';
+    }
+  }
+  function getQuestionName(step) {
+    switch(step) {
+      case 1: return 'occasion';
+      case 2: return 'material';
+      case 3: return 'style';
+      default: return null;
+    }
+  }
+  function resetAnswers() {
+    Object.keys(answers).forEach(k => delete answers[k]);
+    form.querySelectorAll('.option-btn.selected').forEach(btn => btn.classList.remove('selected'));
+    outfitResults.classList.remove('show');
+    productsContainer.innerHTML = '';
+    nextBtn.style.display = 'block';
+  }
+
+  resetBtn.addEventListener('click', () => {
+    resetAnswers();
+    currentStep = 1;
+    showStep(currentStep);
+  });
+
+  function showResults() {
+    nextBtn.style.display = 'none';
+    const styleSection = document.getElementById('question3');
+    if (styleSection) styleSection.hidden = true;
+
+    const key = `${answers.occasion}|${answers.material}|${answers.style}`;
+    const products = productSets[key] || productSets['default'];
+
+    productsContainer.innerHTML = '';
+    products.forEach(prod => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.innerHTML = `
+        <img src="${prod.img}" alt="${prod.name}">
+        <div class="product-info">
+          <p class="product-name">${prod.name}</p>
+          <p class="product-price">${prod.price}</p>
+          <a class="product-link" href="${prod.link}" target="_blank" rel="noopener">Pogledaj na bomar.rs</a>
+        </div>
+      `;
+      productsContainer.appendChild(card);
+    });
+
+    outfitResults.classList.add('show');
+  }
+})();
+</script>
+</body>
+</html>
